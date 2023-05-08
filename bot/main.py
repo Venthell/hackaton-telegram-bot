@@ -3,14 +3,14 @@ import time
 
 
 API_URL: str = 'https://api.telegram.org/bot'
-API_CATS_URL: str = 'https://api.thecatapi.com/v1/images/search'
+API_DOGS_URL: str = 'https://random.dog/woof.json'
 BOT_TOKEN: str = '5424991242:AAGwomxQz1p46bRi_2m3V7kvJlt5RjK9xr0'
-ERROR_TEXT: str = 'Здесь должна была быть картинка с котиком :('
+ERROR_TEXT: str = 'Здесь должна была быть картинка с собачкой :('
 
 offset: int = -2
 counter: int = 0
-cat_response: requests.Response
-cat_link: str
+dog_response: requests.Response
+dog_link: str
 
 
 while counter < 100:
