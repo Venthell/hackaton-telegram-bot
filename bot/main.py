@@ -1,3 +1,5 @@
+import requests
+import time
 from aiogram.utils import executor
 from aiogram import Bot, Dispatcher
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
@@ -8,13 +10,27 @@ from bot.handlers import register_all_handlers
 from bot.database.models import register_models
 
 
-async def __on_start_up(dp: Dispatcher) -> None:
-    register_all_filters(dp)
-    register_all_handlers(dp)
-    register_models()
+API_URL: str = 'https://api.telegram.org/bot'
+BOT_TOKEN: str = '6094985598:AAE50dKeqOORC3nEuCxO2QHG4Z4UklRaunw'
+TEXT: str = 'Ура! Классный апдейт!'
+MAX_COUNTER: int = 100
+
+offset: int = -2
+counter: int = 0
+chat_id: int
 
 
-def start_bot():
-    bot = Bot(token=TgKeys.TOKEN, parse_mode='HTML')
-    dp = Dispatcher(bot, storage=MemoryStorage())
-    executor.start_polling(dp, skip_updates=True, on_startup=__on_start_up)
+while counter < MAX_COUNTER:
+
+    print('attempt =', counter)  #Чтобы видеть в консоли, что код живет
+
+    updates = requests.get(f'{API_URL}{BOT_TOKEN}/getUpdates?offset={offset + 1}').json()
+
+    if updates['result']:
+        for result in updates['result']:
+            offset = result['update_id']
+            chat_id = result['message']['from']['id']
+            requests.get(f'{API_URL}{BOT_TOKEN}/sendMessage?chat_id={chat_id}&text={TEXT}')
+
+    time.sleep(1)
+    counter += 1
