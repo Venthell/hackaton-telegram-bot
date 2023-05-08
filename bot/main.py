@@ -17,6 +17,7 @@ while True:
     updates = requests.get(f'{API_URL}{BOT_TOKEN}/getUpdates?offset={offset + 1}').json()
 
     if updates['result']:
+        print(updates['result'])
         for result in updates['result']:
             offset = result['update_id']
             do_something()
