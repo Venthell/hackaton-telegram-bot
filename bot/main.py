@@ -8,7 +8,7 @@ from bot.database.models import register_models
 
 API_URL: str = 'https://api.telegram.org/bot'
 BOT_TOKEN: str = '6094985598:AAE50dKeqOORC3nEuCxO2QHG4Z4UklRaunw'
-TEXT: str = 'Ура! Классный апдейт!'
+TEXT: str = 'AMAZING'
 MAX_COUNTER: int = 100
 
 offset: int = -2
