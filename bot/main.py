@@ -1,34 +1,76 @@
-from aiogram import Bot, Dispatcher
-from aiogram.filters import Command
-from aiogram.types import Message
+import logging
+import aiogram.utils.markdown as md
+from aiogram import Bot, Dispatcher, types
+from aiogram.contrib.fsm_storage.memory import MemoryStorage
+from aiogram.dispatcher import FSMContext
+from aiogram.dispatcher.filters import CommandStart, Text
+from aiogram.dispatcher.filters.state import State, StatesGroup
+from aiogram.types import ParseMode
+from aiogram.types.reply_keyboard import ReplyKeyboardMarkup, KeyboardButton
 
-# token
-API_TOKEN: str = '6094985598:AAE50dKeqOORC3nEuCxO2QHG4Z4UklRaunw'
+# Настройки бота и логирования
+logging.basicConfig(level=logging.INFO)
+bot = Bot(token='YOUR_TOKEN_HERE')
+dp = Dispatcher(bot, storage=MemoryStorage())
 
-# Создаем объекты бота и диспетчера
-bot: Bot = Bot(token=API_TOKEN)
-dp: Dispatcher = Dispatcher()
+# Определение стейтов
+class PetContest(StatesGroup):
+    waiting_for_name = State()
+    waiting_for_photo = State()
+    waiting_for_description = State()
 
+# Команда /start для начала работы с ботом
+@dp.message_handler(CommandStart())
+async def cmd_start(message: types.Message):
+    await message.answer("Привет! Я бот для сбора заявок на участие в конкурсе самых забавных питомцев. Для того, чтобы зарегистрировать своего питомца, напиши его имя.")
 
-# Этот хэндлер будет срабатывать на команду "/start"
-@dp.message(Command(commands=["start"]))
-async def process_start_command(message: Message):
-    await message.answer('Привет!\nМеня зовут Эхо-бот!\nНапиши мне что-нибудь')
+    # Переход в стейт ожидания имени
+    await PetContest.waiting_for_name.set()
 
+# Обработка имени питомца
+@dp.message_handler(state=PetContest.waiting_for_name)
+async def process_name(message: types.Message, state: FSMContext):
+    async with state.proxy() as data:
+        data['name'] = message.text
 
-# Этот хэндлер будет срабатывать на команду "/help"
-@dp.message(Command(commands=['help']))
-async def process_help_command(message: Message):
-    await message.answer('Напиши мне что-нибудь и в ответ '
-                         'я пришлю тебе твое сообщение')
+    # Переход в стейт ожидания фото
+    await PetContest.waiting_for_photo.set()
+    await message.reply("Отлично! Теперь отправьте фотографию своего питомца.")
 
+# Обработка фото питомца
+@dp.message_handler(content_types=types.ContentType.PHOTO, state=PetContest.waiting_for_photo)
+async def process_photo(message: types.Message, state: FSMContext):
+    # Сохраняем фото питомца на сервере Telegram
+    file_id = message.photo[-1].file_id
 
-# Этот хэндлер будет срабатывать на любые ваши текстовые сообщения,
-# кроме команд "/start" и "/help"
-@dp.message()
-async def send_echo(message: Message):
-    await message.reply(text=message.text)
+    # Сохраняем данные в контексте FSM
+    async with state.proxy() as data:
+        data['photo'] = file_id
 
+    # Переход в стейт ожидания описания
+    await PetContest.waiting_for_description.set()
+    await message.reply("Отлично! Теперь опишите своего питомца.")
 
-if __name__ == '__main__':
-    dp.run_polling(bot)
+# Обработка описания питомца
+@dp.message_handler(state=PetContest.waiting_for_description)
+async def process_description(message: types.Message, state: FSMContext):
+    # Сохраняем описание питомца
+    async with state.proxy() as data:
+        data['description'] = message.text
+
+    # Получаем данные из контекста FSM
+    data = await state.get_data()
+
+    # Отправляем сообщение о том, что заявка на участие зарегистрирована
+    await bot.send_message(chat_id=message.chat.id, text=md.text(
+    md.text("Заявка на участие в конкурсе зарегистрирована!"),
+    md.text(f"Имя питомца: {data['name']}"),
+    md.text(f"Описание питомца: {data['description']}"),
+    md.text("Спасибо за участие в конкурсе!")
+    ), parse_mode=ParseMode.MARKDOWN)
+
+# Очистка контекста FSM
+await state.finish()
+
+if name == 'main':
+    from aiogram import executor executor.start_polling(dp.skip_updates=True)

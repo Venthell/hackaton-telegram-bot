@@ -1,4 +1,2 @@
-from bot import start_bot
-
 if __name__ == '__main__':
-    start_bot()
+    dp.run_polling(bot)
